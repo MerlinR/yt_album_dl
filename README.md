@@ -13,15 +13,22 @@ works for Albums, compilation and singles
 
 ##Options
     - Save location
-        -d
-    - reverse title
+        -d <PATH>
+    - Reverse title
         -r
+    - Force title
+        -t <TITLE>
+    - Force Artist
+        -a <ARTIST>
+    - Force Album
+        -A <ALBUM>
+    - Force Album Artist
+        -y <ALBUM_ARTIST>
  
 
 ##To-Do
     - Fix folder tag, automaticly create folder with album name for MP3s
     - Allow other formats (look into tags for other formats)
-    - Options for manually setting artist/album
     - Store temp files in tmp dir instead of output dir
     - Implemented ability to download Playlists
 

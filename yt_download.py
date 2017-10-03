@@ -4,7 +4,7 @@
 #Description     :
 __author__	= "Merlin Roe"
 #Date            :19/09/2017
-__version__	= "1.0"
+__version__	= "1.6"
 #Usage           :python yt_download.py
 #Notes           :
 #Python_version  :2.7.13
@@ -18,7 +18,7 @@ import json
 import argparse
 from pydub import AudioSegment
 
-class MyLogger(object):
+class ydl_logger(object):
     def debug(self, msg):
         pass
     
@@ -39,31 +39,31 @@ def my_hook(d):
         sys.stdout.flush()
 
 ydl_opts = {
-    'writethumbnail': 'true',
-    'writeinfojson': 'true',
-    'format': 'bestaudio/best',
-    'outtmpl': '%(id)s.%(ext)s',
-    'postprocessors': [{
+    'writethumbnail': 'true',           #Saves stillshot of youtube video as JPG
+    'writeinfojson': 'true',            #Stores JSON file of video info, including segments of video.
+    'format': 'bestaudio/best',         #Format
+    'outtmpl': '%(id)s.%(ext)s',        #Output save format
+    'postprocessors': [{                
         'key': 'FFmpegExtractAudio',
         'preferredcodec': 'wav',
         'preferredquality': '0',
     }],
-    'logger': MyLogger(),
+    'logger': ydl_logger(),
     'progress_hooks': [my_hook],
 }
 
 video_info = {
-        'URL': None,
-        'id': None,
-        'path': None,
-        'video_path': None,
-        'json_path': None,
-        'img_path': None,
-        'title_def': None,
-        'artist_def': None,
-        'album_def': None,
-        'album_artist_def': None,
-        'reverse_title': None
+        'URL': None,                #Youtube URL
+        'id': None,                 #Video ID (from YT)
+        'path': None,               #Path songs are extracted into
+        'video_path': None,         #Entire path of video
+        'json_path': None,          #Entire path of JSON file
+        'img_path': None,           #Entire path of Album art
+        'title_def': None,          #Forced Title
+        'artist_def': None,         #Forced Artist
+        'album_def': None,          #Forced Album
+        'album_artist_def': None,   #Forced album artist (useful for complitation)
+        'reverse_title': None       #Reverse the order of title, either in video or songs/artists.
 }
 
 #########################################################################################################
@@ -74,6 +74,7 @@ def find_video_id(path):
     for fileN in files:
         if(".info.json" in fileN):
             return fileN.split('.')[0]
+            
 
 #########################################################################################################
 
@@ -82,6 +83,45 @@ def clean_filename(filename):
 
 #########################################################################################################
 
+def clean_title(title):
+
+    #Remove possible brackets from the start of title
+    regex = re.compile(r"[\]\)\}]") 
+    if regex.search(title):
+        title = regex.split(title)[1]
+
+    #remove any initial numbering at the start (this and above can be combined)
+    regex = re.compile(r"^\d+[\.\)\s]") 
+    if regex.search(title):
+        title = regex.split(title)[1]
+
+    #Removes possible brackets from the end of title
+    regex = re.compile(r"(\s\()|(\s\[)|(\s\{)|(\s[w|W]/)")
+    if regex.search(title):
+        title = regex.split(title)[0]
+
+    #return with no trailing white spaces
+    return title.strip().title()
+
+#########################################################################################################
+
+def forced_arguments(artist, album, title, album_artist):
+
+    if video_info['artist_def'] is not None:
+        artist = video_info['artist_def']
+    if video_info['album_def'] is not None:
+        album = video_info['album_def']
+    if video_info['title_def'] is not None:
+        title = video_info['title_def']
+    if video_info['album_artist_def'] is not None:
+        album_artist = video_info['album_artist_def']
+    
+
+    return artist, album, title, album_artist
+
+#########################################################################################################
+
+
 def split_title(title):
 
     #Split video title and clean up string, encode into utf-8 for metadata
@@ -89,30 +129,17 @@ def split_title(title):
 
     title = re.sub("\xe2\x80\x93", "-", title) #Fixes issues with "en dash"
     title = re.sub("\xe2\x80\x94", "-", title) #Fixes issues with "en dash"
-    split_title = title.split(' - ')
+    split_title = title.split('-')
 
-    regex = re.compile(r"[\]\)\}]") #Split and clean first half (from brackets etc)
-    if regex.search(split_title[0]):
-        split_title[0] = regex.split(split_title[0])[1]
-
-    regex = re.compile(r"^\d+[\.\)\s]") #remove any initial numbering within list
-    if regex.search(split_title[0]):
-        split_title[0] = regex.split(split_title[0])[1]
-    
-    split_title[0] = split_title[0].strip()
-
-     #Split and clean second half (from brackets etc)
-    regex = re.compile(r"(\s\()|(\s\[)|(\s\{)|(\s[w|W]/)")
-
-    if regex.search(split_title[1]):
-        split_title[1] = regex.split(split_title[1])[0]
-    split_title[1] = split_title[1].strip()
+    #Removes extra brackets etc from titles
+    split_title[0] = clean_title(split_title[0])
+    split_title[1] = clean_title(split_title[1])
 
     #return in order based on reverse of not.
     if(video_info['reverse_title']):
-        return split_title[1].title(), split_title[0].title()
+        return split_title[1], split_title[0]
     else:
-        return split_title[0].title(), split_title[1].title()
+        return split_title[0], split_title[1]
 
 #########################################################################################################
 
@@ -120,21 +147,15 @@ def format_single(video, path, data):
     sys.stdout.write('\tVideo detected as single song.\n')
     sys.stdout.flush()
 
-    ARTIST, TITLE = split_title(data['fulltitle'])
+    artist, title = split_title(data['fulltitle'])
+    artist, album, title, album_artist = forced_arguments(artist, "", title, "")
     
-    if video_info['artist_def'] is not None:
-        ARTIST = video_info['artist_def'][0]
-    if video_info['album_def'] is not None:
-        ALBUM = video_info['album_def'][0]
-    if video_info['title_def'] is not None:
-        TITLE = video_info['title_def'][0]
+    file_name = "{}_{}".format(artist, title)
+    file_name = clean_filename(file_name)
 
-    FILE_NAME = "{}_{}".format(ARTIST, TITLE)
-    FILE_NAME = clean_filename(FILE_NAME)
-
-    video.export("{}{}.{}".format(path,FILE_NAME,"mp3"), 
+    video.export("{}{}.{}".format(path,file_name,"mp3"), 
         format="mp3", 
-        tags={'artist': ARTIST, 'title': TITLE},
+        tags={'artist': artist, 'title': title, 'album': album, 'album_artist': album_artist},
         cover=video_info['img_path']
     )
 
@@ -144,39 +165,26 @@ def format_album(video, path, data):
     sys.stdout.write('Video is an album of the same artist.\n\tIf this is wrong, then well fuck.\n')
     sys.stdout.flush()
 
-    ARTIST, ALBUM = split_title(data['fulltitle'])
+    artist, album = split_title(data['fulltitle'])
 
-    if video_info['artist_def'] is not None:
-        ARTIST = video_info['artist_def'][0]
-    if video_info['album_def'] is not None:
-        ALBUM = video_info['album_def'][0]
+    artist, album, title, album_artist = forced_arguments(artist, album, "", "")
     
     for i in range(0, len(data['chapters'])):
 
-        regex = re.compile(r"(\s\()|(\s\[)|(\s\{)|(\s[w|W]/)")
-        TITLE = data['chapters'][i]['title']
+        title = clean_title(data['chapters'][i]['title'])
 
-        if regex.search(TITLE):
-            TITLE = regex.split(data['chapters'][i]['title'])[0]
-
-        regex = re.compile(r"^\d+[\.\)\s]")
-        if regex.search(TITLE):
-            TITLE = regex.split(TITLE)[1] #Removes any numbering at the begining of song title.
-
-        TITLE = TITLE.title().strip() #removes starting and ending spaces/new lines
-
-        if video_info['title_def'] is not None:
-            TITLE = video_info['title_def'][0]
+        #Check everything for each song is fairly redundant
+        artist, album, title, album_artist = forced_arguments(artist, album, title, album_artist)
 
         #get start and duration of songs in miliseconds
         start = data['chapters'][i]['start_time'] * 1000
         duration = (data['chapters'][i]['end_time'] * 1000) - start
 
-        print "%d: %s - %s\n\t...currently being split." % (i+1, ARTIST, TITLE)
+        print "%d: %s - %s\n\t...currently being split." % (i+1, artist, title)
 
-        video[start:][:duration].export("{}{}.{}".format(path,clean_filename(TITLE),"mp3"), 
+        video[start:][:duration].export("{}{}.{}".format(path,clean_filename(title),"mp3"), 
             format="mp3", 
-            tags={'artist': ARTIST, 'title': TITLE, 'album': ALBUM, 'track': i+1, 'album_artist': 'Various Artists'},
+            tags={'artist': artist, 'title': title, 'album': album, 'track': i+1, 'album_artist': album_artist},
             cover=video_info['img_path']
         )
         
@@ -189,29 +197,25 @@ def format_compilation(video, path, data):
     sys.stdout.write('Video is an compilation album.\n\tIf this is wrong, then well fuck.\n')
     sys.stdout.flush()
 
-    ALBUM = data['fulltitle'].strip().encode('utf-8')
+    album = data['fulltitle'].strip().encode('utf-8')
 
-    if video_info['album_def'] is not None:
-        ALBUM = video_info['album_def'][0]
+    artist, album, title, album_artist = forced_arguments("", album, "", "")
  
     for i in range(0, len(data['chapters'])):
 
-        ARTIST, TITLE = split_title(data['chapters'][i]['title'])
+        artist, title = split_title(data['chapters'][i]['title'])
 
-        if video_info['artist_def'] is not None:
-            ARTIST = video_info['artist_def'][0]
-        if video_info['title_def'] is not None:
-            TITLE = video_info['title_def'][0]
+        artist, album, title, album_artist = forced_arguments(artist, album, title, album_artist)
 
         #get start and duration of songs in miliseconds
         start = data['chapters'][i]['start_time'] * 1000
         duration = (data['chapters'][i]['end_time'] * 1000) - start
 
-        print "%d: %s - %s\n\t...currently being split." % (i+1, ARTIST, TITLE)
+        print "%d: %s - %s\n\t...currently being split." % (i+1, artist, title)
 
-        video[start:][:duration].export("{}{}.{}".format(path,clean_filename(TITLE),"mp3"), 
+        video[start:][:duration].export("{}{}.{}".format(path,clean_filename(title),"mp3"), 
             format="mp3", 
-            tags={'artist': ARTIST, 'title': TITLE, 'album': ALBUM, 'track': i+1, 'album_artist': 'Various Artists'},
+            tags={'artist': artist, 'title': title, 'album': album, 'track': i+1, 'album_artist': album_artist},
             cover=video_info['img_path']
         )
 
@@ -275,12 +279,12 @@ if __name__ == "__main__":
             help="Album to add to metadata of the mp3s."
     )
 
-    #parser.add_argument(
-    #        '-y', dest='album_artist', 
-    #        action='store', 
-    #        nargs=1,
-    #        help="Album artist to add to metadata of the mp3s."
-    #)
+    parser.add_argument(
+            '-y', dest='album_artist', 
+            action='store', 
+            nargs=1,
+            help="Album artist to add to metadata of the mp3s."
+    )
 
     #disabld while figure if only MP3 get metadata tags
     #parser.add_argument(
@@ -293,7 +297,7 @@ if __name__ == "__main__":
     #parser.add_argument(
     #        '-f', dest='folder', 
     #        action='store_true', 
-    #        help="Should files be placed within own album folder. E.G path/{ALBUM}/song(s)"
+    #        help="Should files be placed within own album folder. E.G path/{album}/song(s)"
     #)
     
     args = parser.parse_args()
@@ -302,10 +306,15 @@ if __name__ == "__main__":
     video_info['URL'] = args.link
     video_info['path'] = args.direc + '/'
     video_info['reverse_title'] = args.reverse
-    video_info['artist_def'] = args.artist
-    video_info['album_def'] = args.album
-    video_info['title_def'] = args.title
-    #video_info['album_artist_def'] = args.album_artist
+
+    if args.artist is not None:
+        video_info['artist_def'] = clean_title(args.artist[0])
+    if args.album is not None:
+        video_info['album_def'] = clean_title(args.album[0])
+    if args.title is not None:
+        video_info['title_def'] = clean_title(args.title[0])
+    if args.album_artist is not None:
+        video_info['album_artist_def'] = clean_title(args.album_artist[0])
 
     ydl_opts['outtmpl'] = video_info['path'] + ydl_opts['outtmpl']
 
@@ -321,16 +330,17 @@ if __name__ == "__main__":
     video_info['json_path'] = video_info['path'] + video_info['id'] + '.info.json'
     video_info['img_path'] = video_info['path'] + video_info['id'] + '.jpg'
 
-    #Load vudei into audiosegment
+    #Load video into audiosegment
     video = AudioSegment.from_file(video_info['video_path'], 'wav')
     
     #Extract all video json data 
     with open(video_info['json_path']) as data_file:    
             data = json.load(data_file)
 
+    #Use chapters to figure out if Single, Album or compilation.
     if(data['chapters'] is None):
         format_single(video, video_info['path'], data) 
-    elif(" - " in data['fulltitle']):
+    elif("-" in data['fulltitle']):
         format_album(video, video_info['path'], data)
     else:
         format_compilation(video, video_info['path'], data)
