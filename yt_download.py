@@ -2,9 +2,9 @@
 #==============================================================================
 #Title           :yt_download.py
 #Description     :
-__author__	= "Merlin Roe"
+__author__  = "Merlin Roe"
 #Date            :19/09/2017
-__version__	= "1.6"
+__version__ = "1.6"
 #Usage           :python yt_download.py
 #Notes           :
 #Python_version  :2.7.13
@@ -35,7 +35,7 @@ def my_hook(d):
         sys.stdout.flush()
     elif d['status'] == 'finished':
         sys.stdout.write('\r\033[K')
-        sys.stdout.write('\tDownload complete\n\tConverting video to wav\n')
+        sys.stdout.write('\tDownload complete\n')
         sys.stdout.flush()
 
 ydl_opts = {
@@ -43,11 +43,11 @@ ydl_opts = {
     'writeinfojson': 'true',            #Stores JSON file of video info, including segments of video.
     'format': 'bestaudio/best',         #Format
     'outtmpl': '%(id)s.%(ext)s',        #Output save format
-    'postprocessors': [{                
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'wav',
-        'preferredquality': '0',
-    }],
+ #   'postprocessors': [{                
+ #       'key': 'FFmpegExtractAudio',
+ #       'preferredcodec': 'wav',
+ #       'preferredquality': '0',
+ #   }],
     'logger': ydl_logger(),
     'progress_hooks': [my_hook],
 }
@@ -85,20 +85,15 @@ def clean_filename(filename):
 
 def clean_title(title):
 
-    #Remove possible brackets from the start of title
-    regex = re.compile(r"[\]\)\}]") 
+    #Remove set of brackets and everything within them
+    regex = re.compile(r"[\(\[\{].+[\]\)\}]") 
     if regex.search(title):
-        title = regex.split(title)[1]
+        title = regex.sub("", title)
 
     #remove any initial numbering at the start (this and above can be combined)
     regex = re.compile(r"^\d+[\.\)\s]") 
     if regex.search(title):
         title = regex.split(title)[1]
-
-    #Removes possible brackets from the end of title
-    regex = re.compile(r"(\s\()|(\s\[)|(\s\{)|(\s[w|W]/)")
-    if regex.search(title):
-        title = regex.split(title)[0]
 
     #return with no trailing white spaces
     return title.strip().title()
@@ -116,7 +111,6 @@ def forced_arguments(artist, album, title, album_artist):
     if video_info['album_artist_def'] is not None:
         album_artist = video_info['album_artist_def']
     
-
     return artist, album, title, album_artist
 
 #########################################################################################################
@@ -286,14 +280,6 @@ if __name__ == "__main__":
             help="Album artist to add to metadata of the mp3s."
     )
 
-    #disabld while figure if only MP3 get metadata tags
-    #parser.add_argument(
-    #        '-e', dest='extension', 
-    #        action='store', 
-    #        nargs=1,
-    #        help="Format to save files as."
-    #)
-
     #parser.add_argument(
     #        '-f', dest='folder', 
     #        action='store_true', 
@@ -316,22 +302,26 @@ if __name__ == "__main__":
     if args.album_artist is not None:
         video_info['album_artist_def'] = clean_title(args.album_artist[0])
 
-    ydl_opts['outtmpl'] = video_info['path'] + ydl_opts['outtmpl']
-
     #creates destination folder
     if (not os.path.exists(video_info['path'])):
         os.makedirs(video_info['path'])
 
+
+    #Sets template for Youtube-dl settings
+    ydl_opts['outtmpl'] = video_info['path'] + ydl_opts['outtmpl']
+
+    #Downloads video using settings and given URL.
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         ydl.download(video_info['URL'])
 
+
     video_info['id'] = find_video_id(args.direc)
-    video_info['video_path'] = video_info['path'] + video_info['id'] + '.wav'
+    video_info['video_path'] = video_info['path'] + video_info['id'] + '.webm'
     video_info['json_path'] = video_info['path'] + video_info['id'] + '.info.json'
     video_info['img_path'] = video_info['path'] + video_info['id'] + '.jpg'
 
     #Load video into audiosegment
-    video = AudioSegment.from_file(video_info['video_path'], 'wav')
+    video = AudioSegment.from_file(video_info['video_path'], 'webm')
     
     #Extract all video json data 
     with open(video_info['json_path']) as data_file:    
