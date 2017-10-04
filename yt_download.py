@@ -4,7 +4,7 @@
 #Description     :
 __author__  = "Merlin Roe"
 #Date            :19/09/2017
-__version__ = "1.6"
+__version__ = "1.7"
 #Usage           :python yt_download.py
 #Notes           :
 #Python_version  :2.7.13
@@ -28,7 +28,7 @@ class ydl_logger(object):
     def error(self, msg):
         print(msg)
 
-def my_hook(d):
+def yt_d_hook(d):
     if d['status'] == 'downloading':
         sys.stdout.write('\r\033[K')
         sys.stdout.write('\tDownloading video | ETA: {} seconds'.format(str(d["eta"])))
@@ -49,7 +49,7 @@ ydl_opts = {
  #       'preferredquality': '0',
  #   }],
     'logger': ydl_logger(),
-    'progress_hooks': [my_hook],
+    'progress_hooks': [yt_d_hook],
 }
 
 video_info = {
