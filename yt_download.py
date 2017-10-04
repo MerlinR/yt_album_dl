@@ -21,10 +21,8 @@ from pydub import AudioSegment
 class ydl_logger(object):
     def debug(self, msg):
         pass
-    
     def warning(self, msg):
         pass
-
     def error(self, msg):
         print(msg)
 
@@ -53,18 +51,22 @@ ydl_opts = {
 }
 
 video_info = {
-        'URL': None,                #Youtube URL
-        'id': None,                 #Video ID (from YT)
-        'path': None,               #Path songs are extracted into
-        'video_path': None,         #Entire path of video
-        'json_path': None,          #Entire path of JSON file
-        'img_path': None,           #Entire path of Album art
-        'title_def': None,          #Forced Title
-        'artist_def': None,         #Forced Artist
-        'album_def': None,          #Forced Album
-        'album_artist_def': None,   #Forced album artist (useful for complitation)
-        'reverse_title': None       #Reverse the order of title, either in video or songs/artists.
+    'URL': None,                #Youtube URL
+    'id': None,                 #Video ID (from YT)
+    'video_path': None,         #Entire path of video
+    'json_path': None,          #Entire path of JSON file
+    'img_path': None,           #Entire path of Album art
 }
+
+download_settings = {
+    'path': None,               #Path songs are extracted into
+    'title_def': None,          #Forced Title
+    'artist_def': None,         #Forced Artist
+    'album_def': None,          #Forced Album
+    'album_artist_def': None,   #Forced album artist (useful for complitation)
+    'reverse_title': None       #Reverse the order of title, either in video or songs/artists.
+}
+
 
 #########################################################################################################
 
@@ -102,14 +104,14 @@ def clean_title(title):
 
 def forced_arguments(artist, album, title, album_artist):
 
-    if video_info['artist_def'] is not None:
-        artist = video_info['artist_def']
-    if video_info['album_def'] is not None:
-        album = video_info['album_def']
-    if video_info['title_def'] is not None:
-        title = video_info['title_def']
-    if video_info['album_artist_def'] is not None:
-        album_artist = video_info['album_artist_def']
+    if download_settings['artist_def'] is not None:
+        artist = download_settings['artist_def']
+    if download_settings['album_def'] is not None:
+        album = download_settings['album_def']
+    if download_settings['title_def'] is not None:
+        title = download_settings['title_def']
+    if download_settings['album_artist_def'] is not None:
+        album_artist = download_settings['album_artist_def']
     
     return artist, album, title, album_artist
 
@@ -130,7 +132,7 @@ def split_title(title):
     split_title[1] = clean_title(split_title[1])
 
     #return in order based on reverse of not.
-    if(video_info['reverse_title']):
+    if(download_settings['reverse_title']):
         return split_title[1], split_title[0]
     else:
         return split_title[0], split_title[1]
@@ -290,25 +292,31 @@ if __name__ == "__main__":
 
     video = None
     video_info['URL'] = args.link
-    video_info['path'] = args.direc + '/'
-    video_info['reverse_title'] = args.reverse
+
+    #Hack to filter playlists out
+    if(video_info['URL'][0].find("playlist")):
+        print "Cannot currently handle playlists. Exiting"
+        quit()
+
+    download_settings['path'] = args.direc + '/'
+    download_settings['reverse_title'] = args.reverse
 
     if args.artist is not None:
-        video_info['artist_def'] = clean_title(args.artist[0])
+        download_settings['artist_def'] = clean_title(args.artist[0])
     if args.album is not None:
-        video_info['album_def'] = clean_title(args.album[0])
+        download_settings['album_def'] = clean_title(args.album[0])
     if args.title is not None:
-        video_info['title_def'] = clean_title(args.title[0])
+        download_settings['title_def'] = clean_title(args.title[0])
     if args.album_artist is not None:
-        video_info['album_artist_def'] = clean_title(args.album_artist[0])
+        download_settings['album_artist_def'] = clean_title(args.album_artist[0])
 
     #creates destination folder
-    if (not os.path.exists(video_info['path'])):
-        os.makedirs(video_info['path'])
+    if (not os.path.exists(download_settings['path'])):
+        os.makedirs(download_settings['path'])
 
 
     #Sets template for Youtube-dl settings
-    ydl_opts['outtmpl'] = video_info['path'] + ydl_opts['outtmpl']
+    ydl_opts['outtmpl'] = download_settings['path'] + ydl_opts['outtmpl']
 
     #Downloads video using settings and given URL.
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -316,9 +324,9 @@ if __name__ == "__main__":
 
 
     video_info['id'] = find_video_id(args.direc)
-    video_info['video_path'] = video_info['path'] + video_info['id'] + '.webm'
-    video_info['json_path'] = video_info['path'] + video_info['id'] + '.info.json'
-    video_info['img_path'] = video_info['path'] + video_info['id'] + '.jpg'
+    video_info['video_path'] = download_settings['path'] + video_info['id'] + '.webm'
+    video_info['json_path'] = download_settings['path'] + video_info['id'] + '.info.json'
+    video_info['img_path'] = download_settings['path'] + video_info['id'] + '.jpg'
 
     #Load video into audiosegment
     video = AudioSegment.from_file(video_info['video_path'], 'webm')
@@ -329,10 +337,10 @@ if __name__ == "__main__":
 
     #Use chapters to figure out if Single, Album or compilation.
     if(data['chapters'] is None):
-        format_single(video, video_info['path'], data) 
+        format_single(video, download_settings['path'], data) 
     elif("-" in data['fulltitle']):
-        format_album(video, video_info['path'], data)
+        format_album(video, download_settings['path'], data)
     else:
-        format_compilation(video, video_info['path'], data)
+        format_compilation(video, download_settings['path'], data)
 
     clean_files()
