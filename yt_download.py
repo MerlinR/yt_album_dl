@@ -293,9 +293,12 @@ if __name__ == "__main__":
     video = None
     video_info['URL'] = args.link
 
-    #Hack to filter playlists out
+    #Hack to filter playlists out and none youtube videos
     if(video_info['URL'][0].find("playlist")):
         print "Cannot currently handle playlists. Exiting"
+        quit()
+    elif(video_info['URL'][0].find("youtube")):
+        print "Currently only supports youtube"
         quit()
 
     download_settings['path'] = args.direc + '/'
