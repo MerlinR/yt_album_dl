@@ -44,15 +44,18 @@ def store_arguments(arguments):
 
 #########################################################################################################
 
-def find_video_ids(path):
-    files = os.listdir(path)
-    found_ids = []
+def forced_arguments(artist, album, title, album_artist):
 
-    for fileN in files:
-        if(".info.json" in fileN):
-            found_ids.append(fileN.split('.')[0])
+    if download_settings['artist_def'] is not None:
+        artist = download_settings['artist_def']
+    if download_settings['album_def'] is not None:
+        album = download_settings['album_def']
+    if download_settings['title_def'] is not None:
+        title = download_settings['title_def']
+    if download_settings['album_artist_def'] is not None:
+        album_artist = download_settings['album_artist_def']
     
-    return found_ids
+    return artist, album, title, album_artist
 
 #########################################################################################################
 
@@ -79,22 +82,6 @@ def clean_title(title):
 
 #########################################################################################################
 
-def forced_arguments(artist, album, title, album_artist):
-
-    if download_settings['artist_def'] is not None:
-        artist = download_settings['artist_def']
-    if download_settings['album_def'] is not None:
-        album = download_settings['album_def']
-    if download_settings['title_def'] is not None:
-        title = download_settings['title_def']
-    if download_settings['album_artist_def'] is not None:
-        album_artist = download_settings['album_artist_def']
-    
-    return artist, album, title, album_artist
-
-#########################################################################################################
-
-
 def split_title(title):
 
     #Split video title and clean up string, encode into utf-8 for meta-data
@@ -102,12 +89,12 @@ def split_title(title):
 
     #Removes "en dash" (weird HTML based dashes) not ASCII
     title = re.sub("\xe2\x80\x93", "-", title)
-    title = re.sub("\xe2\x80\x94", "-", title) 
-    split_title = title.split('-')
+    title = re.sub("\xe2\x80\x94", "-", title)
 
     #Removes extra brackets etc from titles
-    split_title[0] = clean_title(split_title[0])
-    split_title[1] = clean_title(split_title[1])
+    title = clean_title(title)
+
+    split_title = title.split('-')
 
     #return in order based on reverse of not.
     if(download_settings['reverse_title']):
@@ -117,12 +104,34 @@ def split_title(title):
 
 #########################################################################################################
 
+def find_video_ids(path):
+    files = os.listdir(path)
+    found_ids = []
+
+    for fileN in files:
+        if(".info.json" in fileN):
+            found_ids.append(fileN.split('.')[0])
+    
+    return found_ids
+
+#########################################################################################################
+
+def export_song(start, duration, video, path, img_path, file_name, artist, title, album, album_artist):
+    #Load video into audiosegment
+    video_split = AudioSegment.from_file(video.video_path, 'webm')
+
+    #While video splitting is always necessary we can add meta-data and convert to MP3
+    video_split[start:][:duration].export("{}{}.{}".format(download_settings['path'] ,file_name, "mp3"), 
+        format="mp3", 
+        tags={'artist': artist, 'title': title, 'album': album, 'album_artist': album_artist},
+        cover=video.img_path
+    )
+
+#########################################################################################################
+
 def format_single(video):
     sys.stdout.write('\tVideo detected as single song.\n')
     sys.stdout.flush()
-
-    #Load video into audiosegment
-    video_split = AudioSegment.from_file(video.video_path, 'webm')
 
     #Splits title into artist and title.
     artist, title = split_title(video.json_contents['fulltitle'])
@@ -134,12 +143,10 @@ def format_single(video):
     file_name = "{}_{}".format(artist, title)
     file_name = clean_filename(file_name)
 
-    #While video splitting is not necessary we can add meta-data and convert to MP3
-    video_split.export("{}{}.{}".format(download_settings['path'] ,file_name, "mp3"), 
-        format="mp3", 
-        tags={'artist': artist, 'title': title, 'album': album, 'album_artist': album_artist},
-        cover=video.img_path
-    )
+    #Export video as MP3 with meta-data
+    export_song(0, video.json_contents['duration'] * 1000, video, 
+                download_settings['path'], video.img_path, file_name, 
+                artist, title, album, album_artist)
 
     print "Finished downloading %s\nStored within %s" % (video.json_contents['fulltitle'], download_settings['path'])
 
@@ -148,9 +155,6 @@ def format_single(video):
 def format_album(video):
     sys.stdout.write('Video is an album of the same artist.\n\tIf this is wrong, then well fuck.\n')
     sys.stdout.flush()
-
-    #Load video into audiosegment
-    video_split = AudioSegment.from_file(video.video_path, 'webm')
 
     artist, album = split_title(video.json_contents['fulltitle'])
 
@@ -170,12 +174,10 @@ def format_album(video):
 
         print "%d: %s - %s\n\t...currently being split." % (i+1, artist, title)
 
-        video_split[start:][:duration].export("{}{}.{}".format(download_settings['path'], clean_filename(title), "mp3"), 
-            format="mp3", 
-            tags={'artist': artist, 'title': title, 'album': album, 'track': i+1, 'album_artist': album_artist},
-            cover=video.img_path
-        )
-        
+        #Export video as MP3 with meta-data
+        export_song(start, duration, video, 
+                    download_settings['path'], video.img_path, clean_filename(title), 
+                    artist, title, album, album_artist)
     print "Finished downloading and splitting %s\nStored within %s" % (video.json_contents['fulltitle'], download_settings['path'])
 
 #########################################################################################################
@@ -183,9 +185,6 @@ def format_album(video):
 def format_compilation(video):
     sys.stdout.write('Video is an compilation album.\n\tIf this is wrong, then well fuck.\n')
     sys.stdout.flush()
-
-     #Load video into audiosegment
-    video_split = AudioSegment.from_file(video.video_path, 'webm')
 
     album = video.json_contents['fulltitle'].strip().encode('utf-8')
 
@@ -203,11 +202,9 @@ def format_compilation(video):
 
         print "%d: %s - %s\n\t...currently being split." % (i+1, artist, title)
 
-        video_split[start:][:duration].export("{}{}.{}".format(download_settings['path'], clean_filename(title), "mp3"), 
-            format="mp3", 
-            tags={'artist': artist, 'title': title, 'album': album, 'track': i+1, 'album_artist': album_artist},
-            cover=video.img_path
-        )
+        export_song(start, duration, video, 
+                    download_settings['path'], video.img_path, clean_filename(title), 
+                    artist, title, album, album_artist)
 
     print "Finished downloading and splitting %s\nStored within %s" % (video.json_contents['fulltitle'], download_settings['path'])
 
@@ -297,14 +294,13 @@ if __name__ == "__main__":
         dl_videos.append(video_data(video, download_settings['path']))
 
     #Use video download count to find play lists
-    #This is kinda nasty, although mostly works, could be issues with album and compilation
+    #This is kinda Janky, although mostly works, could be issues with album and compilation
+    #Also passing [0] for everything else just seems off
     if(len(dl_videos) > 1):
         print "playlist"
-
-    if(dl_videos[0].json_contents['chapters'] is None):
-        format_single(dl_videos[0],) 
-
-    if("-" in dl_videos[0].json_contents['fulltitle']):
+    elif(dl_videos[0].json_contents['chapters'] is None):
+        format_single(dl_videos[0]) 
+    elif("-" in dl_videos[0].json_contents['fulltitle']):
         format_album(dl_videos[0])
     else:
         format_compilation(dl_videos[0])

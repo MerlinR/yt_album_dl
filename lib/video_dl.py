@@ -48,7 +48,7 @@ class yt_downloader:
 
     def __init__(self, url):
         self.url = url
-        validation_checks()
+        self.validation_checks()
 
     def download_video(self):
         print self.url
