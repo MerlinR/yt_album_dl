@@ -60,9 +60,6 @@ class yt_downloader:
 
     def validation_checks(self):
         #Hack to filter playlists out and none youtube videos
-        if("playlist" in self.url):
-            print "Cannot currently handle playlists. Exiting"
-            quit()
-        elif("youtube" not in self.url):
+        if("youtube" not in self.url):
             print "Currently only supports youtube"
             quit()
