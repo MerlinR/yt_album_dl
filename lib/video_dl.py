@@ -41,6 +41,11 @@ class yt_downloader:
         'writethumbnail': 'true',           #Saves stillshot of youtube video as JPG
         'writeinfojson': 'true',            #Stores JSON file of video info, including segments of video.
         'format': 'bestaudio/best',         #Format
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'wav',
+            'preferredquality': '0',
+        }],
         'outtmpl': '%(id)s.%(ext)s',        #Output save format
         'logger': ydl_logger(),
         'progress_hooks': [yt_d_hook],

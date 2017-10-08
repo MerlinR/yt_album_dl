@@ -28,7 +28,7 @@ class video_data:
     def __init__(self, given_id, given_path):
 
         self.video_id = given_id
-        self.video_path = given_path + self.video_id + '.webm'
+        self.video_path = given_path + self.video_id + '.wav'
         self.json_path = given_path + self.video_id + '.info.json'
         self.img_path = given_path + self.video_id + '.jpg'
 
