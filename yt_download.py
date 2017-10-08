@@ -66,7 +66,7 @@ def forced_arguments(artist, album, title, album_artist):
 
 def clean_filename(filename):
     #Removes chars that could cause issues as file name.
-    return re.sub(r'[^a-zA-Z0-9\-\_]',"",filename) 
+    return re.sub(r'[^a-zA-Z0-9\-\_\ ]',"",filename) 
 
 #########################################################################################################
 
@@ -137,11 +137,35 @@ def export_song(video, start, duration, path, img_path, track_num, file_name, ar
 #########################################################################################################
 
 def format_playlist(video_list):
-    sys.stdout.write('\tDetected plyalist, formating videos as singles.\n')
+    sys.stdout.write('\tDetected plyalist, formating videos\n')
     sys.stdout.flush()
 
-    for video in video_list:
-        format_single(video)
+    #artist, album = split_title(video_list[i].json_contents['playlist_title'])
+
+    for i in range(0, len(video_list)):
+        #Splits title into artist and title.
+        artist, title = split_title(video_list[i].json_contents['fulltitle'])
+
+        #Check for forced arguments
+        artist, album, title, album_artist = forced_arguments(artist, "", title, "")
+        
+        #sets safe name for saving file to Disk
+        if(download_settings['artist_def'] is not None):
+            file_name = title
+        else:
+            file_name = "{}_{}".format(artist, title)
+
+        file_name = clean_filename(file_name)
+
+        print "%d: %s - %s\n\t...currently being formatted." % (i+1, artist, title)
+
+        #Export video as MP3 with meta-data
+        export_song(video_list[i], 0, video_list[i].json_contents['duration'] * 1000, 
+                    download_settings['path'], video_list[i].img_path, i+1,
+                    file_name, artist, title, album, album_artist)
+
+    print "Finished downloading and formating %s\nStored within %s" % (video_list[i].json_contents['fulltitle'], download_settings['path'])
+        
 
 #########################################################################################################
 
@@ -164,7 +188,7 @@ def format_single(video):
                 download_settings['path'], video.img_path, 0,
                 file_name, artist, title, album, album_artist)
 
-    print "Finished downloading %s\nStored within %s" % (video.json_contents['fulltitle'], download_settings['path'])
+    print "Finished downloading and formating %s\nStored within %s" % (video.json_contents['fulltitle'], download_settings['path'])
 
 #########################################################################################################
 
@@ -318,8 +342,8 @@ if __name__ == "__main__":
 
     if( len(dl_videos) > 1 or download_settings['video_type'] == 'p'):
         #If mutiple videos downloaded its a playlist
-        print "cant currently handle playlist"
-        #format_playlist(dl_videos[0])
+        print "PLAYLISTS ARE WORK IN PROGRESS, PLEASE FORCE ALBUM AND ARTIST"
+        format_playlist(dl_videos)
 
     elif( dl_videos[0].json_contents['chapters'] is None or download_settings['video_type'] == 's'):
         #If no chapters in single video, its a single

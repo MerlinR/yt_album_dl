@@ -16,6 +16,8 @@ works for Albums, compilation and singles
         -d <PATH>
     - Reverse title
         -r
+    - Forced detection
+        -f <c|p|a|s>
     - Force title
         -t <TITLE>
     - Force Artist
@@ -27,7 +29,6 @@ works for Albums, compilation and singles
  
 
 ##To-Do
-    - Fix folder tag, automaticly create folder with album name for MP3s
     - Allow other formats (look into tags for other formats)
     - Store temp files in tmp dir instead of output dir
     - Implemented ability to download Playlists
