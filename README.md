@@ -1,19 +1,23 @@
-#Youtube Downloader and Album splitter
-Python script that downloads youtube videos and splits albums based on description.
-Editing the metadata to use artist name and song title
-uses youtube-dl
-
-##Req
-youtube-dl
-pydub
+#Youtube Album splitter
+Python script offering easy way to download and convert Youtube music videos into MP3's, while splitting those large videos into individual songs; with all the correct tags. 
+Allowing you to instantly place it within your music library, and correctly be displayed. 
 
 ##Core Features
-Script that heavy relies on youtube-dl to automaticly download youtube albums and split the album into indivual songs with correct metadata
-works for Albums, compilation and singles
+This script will differentiate, download and split:
+    - Singles
+    - Albums
+    - Compilations
+    - Playlists (kinda)
+
+##Install guide
+    1.Install requirements
+        - pip install -r requirements.txt
+    2. Run!
+        - python yt_album_splitter.py <URL> -d <DESTINATION>
 
 ##Options
     - Save location
-        -d <PATH>
+        -d <DESTINATION>
     - Reverse title
         -r
     - Forced detection
@@ -27,10 +31,19 @@ works for Albums, compilation and singles
     - Force Album Artist
         -y <ALBUM_ARTIST>
  
+##Req
+(just install the requirement.txt file)
+youtube-dl
+pydub
 
 ##To-Do
     - Allow other formats (look into tags for other formats)
-    - Store temp files in tmp dir instead of output dir
-    - Implemented ability to download Playlists
+    - Store temp files in tmp dir instead of output dir (less clutter and no residue)
+    - Implemented ability to download Playlists (kinda works?)
 
-##Extras
+##Bugs
+    - Album or compilation detected as single song
+        This is either to the video not listed the songs within a large file or due to
+        relying on youtube-dl json files to determine the contents of a video,
+        which sometimes returns 'Null' for the chapters (songs) within a larger video.
+        This cant be fixed by using force detection.
