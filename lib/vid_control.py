@@ -26,7 +26,6 @@ class video_data:
     json_contents = None
 
     def __init__(self, given_id, given_path):
-
         self.video_id = given_id
         self.video_path = given_path + self.video_id + '.wav'
         self.json_path = given_path + self.video_id + '.info.json'
@@ -35,11 +34,11 @@ class video_data:
         with open(self.json_path) as data_file:    
             self.json_contents = json.load(data_file)
 
+    # Using class destructor to delete the remnants of the download.
     def __del__(self):
         os.remove(self.video_path)
         os.remove(self.json_path)
         os.remove(self.img_path)
-
 
     def print_data(self):
         print self.video_id

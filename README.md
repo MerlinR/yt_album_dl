@@ -40,6 +40,7 @@ pydub
     - Allow other formats (look into tags for other formats)
     - Store temp files in tmp dir instead of output dir (less clutter and no residue)
     - Implemented ability to download Playlists (kinda works?)
+    - REALLY CLEAN THE NASTY ASS CODE UP
 
 ##Bugs
     - Album or compilation detected as single song

@@ -38,15 +38,15 @@ class yt_downloader:
     url = ""
 
     ydl_opts = {
-        'writethumbnail': 'true',           #Saves stillshot of youtube video as JPG
-        'writeinfojson': 'true',            #Stores JSON file of video info, including segments of video.
-        'format': 'bestaudio/best',         #Format
+        'writethumbnail': 'true',           # Saves stillshot of youtube video as JPG
+        'writeinfojson': 'true',            # Stores JSON file of video info, including segments of video.
+        'format': 'bestaudio/best',         # Format
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'wav',
             'preferredquality': '0',
         }],
-        'outtmpl': '%(id)s.%(ext)s',        #Output save format
+        'outtmpl': '%(id)s.%(ext)s',        # Output save format
         'logger': ydl_logger(),
         'progress_hooks': [yt_d_hook],
     }
@@ -64,7 +64,6 @@ class yt_downloader:
         self.ydl_opts['outtmpl'] = path + self.ydl_opts['outtmpl']
 
     def validation_checks(self):
-        #Hack to filter playlists out and none youtube videos
         if("youtube" not in self.url):
             print "Currently only supports youtube"
             quit()
