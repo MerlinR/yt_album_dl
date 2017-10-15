@@ -15,8 +15,8 @@ import os
 import re
 import argparse
 from pydub import AudioSegment
-from lib.video_dl import yt_downloader
-from lib.vid_control import video_data
+from video_dl import yt_downloader
+from vid_control import video_data
 
 VIDEO_TYPES = {'p', 's', 'a', 'c'}
 
