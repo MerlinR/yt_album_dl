@@ -152,7 +152,8 @@ def format_playlist(video_list):
     sys.stdout.write('\tDetected plyalist, formating videos\n')
     sys.stdout.flush()
 
-    # artist, album = split_title(video_list[i].json_contents['playlist_title'])
+    #Name of playlist can be used to find artist and album, but cant distinguish between compilations and albums.
+    #artist, album = split_title(video_list[i].json_contents['playlist'])
 
     for i in range(0, len(video_list)):
         # Splits title into artist and title.
@@ -354,7 +355,7 @@ if __name__ == "__main__":
     # This is so Damn nasty.
     if( len(dl_videos) > 1 or download_settings['video_type'] == 'p'):
         # If mutiple videos downloaded its a playlist
-        print "PLAYLISTS ARE WORK IN PROGRESS, PLEASE FORCE ALBUM AND ARTIST"
+        print "PLAYLISTS ARE WORK IN PROGRESS, PLEASE FORCE ALBUM AND ARTIST IF DOESNT WORK CORRECTLY"
         format_playlist(dl_videos)
 
     elif( dl_videos[0].json_contents['chapters'] is None or download_settings['video_type'] == 's'):
