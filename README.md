@@ -1,21 +1,21 @@
-#Youtube Album splitter
+# Youtube Album splitter
 Python script offering easy way to download and convert Youtube music videos into MP3's, while splitting those large videos into individual songs; with all the correct tags. 
 Allowing you to instantly place it within your music library, and correctly be displayed. 
 
-##Core Features
+## Core Features
 This script will differentiate, download and split:
     - Singles
     - Albums
     - Compilations
     - Playlists (kinda)
 
-##Install guide
+## Install guide
     1.Install requirements
         - pip install -r requirements.txt
     2. Run!
         - python yt_album_splitter.py <URL> -d <DESTINATION>
 
-##Options
+## Options
     - Save location
         -d <DESTINATION>
     - Reverse title
@@ -31,18 +31,18 @@ This script will differentiate, download and split:
     - Force Album Artist
         -y <ALBUM_ARTIST>
  
-##Req
+## Req
 (just install the requirement.txt file)
 youtube-dl
 pydub
 
-##To-Do
+## To-Do
     - Allow other formats (look into tags for other formats)
     - Store temp files in tmp dir instead of output dir (less clutter and no residue)
     - Implemented ability to download Playlists (kinda works?)
     - REALLY CLEAN THE NASTY ASS CODE UP
 
-##Bugs
+## Bugs
     - Album or compilation detected as single song
         This is either to the video not listed the songs within a large file or due to
         relying on youtube-dl json files to determine the contents of a video,
