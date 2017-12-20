@@ -5,7 +5,7 @@
 #                 and tucked away into a class.
 __author__	= "Merlin Roe"
 #Date            :07/10/2017
-__version__	= "0.1"
+__version__	= "0.2"
 #Usage           :python lib/video_dl.py
 #Notes           :
 #Python_version  :2.7.13
@@ -43,7 +43,7 @@ class yt_downloader:
         'format': 'bestaudio/best',         # Format
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'wav',
+            'preferredcodec': 'mp3',
             'preferredquality': '0',
         }],
         'outtmpl': '%(id)s.%(ext)s',        # Output save format
@@ -53,17 +53,17 @@ class yt_downloader:
 
     def __init__(self, url):
         self.url = url
-        self.validation_checks()
+        self.validationCheck()
 
-    def download_video(self):
+    def downloadVideo(self):
         print self.url
         with youtube_dl.YoutubeDL(self.ydl_opts) as ydl:
             ydl.download([self.url])
 
-    def output_dir(self, path):
+    def setDownloadPath(self, path):
         self.ydl_opts['outtmpl'] = path + self.ydl_opts['outtmpl']
 
-    def validation_checks(self):
+    def validationCheck(self):
         if("youtube" not in self.url):
             print "Currently only supports youtube"
             quit()

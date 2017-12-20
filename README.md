@@ -13,14 +13,16 @@ This script will differentiate, download and split:
     1.Install requirements
         - pip install -r requirements.txt
     2. Run!
-        - python yt_album_splitter.py <URL> -d <DESTINATION>
+        - python yt_album_dl.py <URL> -d <DESTINATION>
 
 ## Options
     - Save location
         -d <DESTINATION>
     - Reverse title
         -r
-    - Forced detection
+    - No spaces in filename
+        -p
+    - Force detection
         -f <c|p|a|s>
     - Force title
         -t <TITLE>
@@ -30,11 +32,15 @@ This script will differentiate, download and split:
         -A <ALBUM>
     - Force Album Artist
         -y <ALBUM_ARTIST>
- 
+
 ## Req
 (just install the requirement.txt file)
 youtube-dl
 pydub
+
+## Tests
+
+Im an idiot so tests need to be ran from the main dir.
 
 ## To-Do
     - Allow other formats (look into tags for other formats)

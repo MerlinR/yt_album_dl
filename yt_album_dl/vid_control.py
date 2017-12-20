@@ -6,7 +6,7 @@
 #                 delete the remaing files after re-formating song(s)
 __author__	= "Merlin Roe"
 #Date            :07/10/2017
-__version__	= "0.1"
+__version__	= "0.2"
 #Usage           :python lib/video_class.py
 #Notes           :
 #Python_version  :2.7.13
@@ -18,30 +18,17 @@ import json
 
 class video_data:
 
-    video_id = ""
-    video_path = ""
-    json_path = ""
-    img_path = ""
-
-    json_contents = None
-
-    def __init__(self, given_id, given_path):
-        self.video_id = given_id
-        self.video_path = given_path + self.video_id + '.wav'
-        self.json_path = given_path + self.video_id + '.info.json'
-        self.img_path = given_path + self.video_id + '.jpg'
+    def __init__(self, GivenVideoID, GivenVideoPath):
+        self.video_id = GivenVideoID
+        self.video_path = GivenVideoPath + self.video_id + '.mp3'
+        self.json_path = GivenVideoPath + self.video_id + '.info.json'
+        self.img_path = GivenVideoPath + self.video_id + '.jpg'
 
         with open(self.json_path) as data_file:    
-            self.json_contents = json.load(data_file)
+            self.jsonVideoData = json.load(data_file)
 
     # Using class destructor to delete the remnants of the download.
     def __del__(self):
         os.remove(self.video_path)
         os.remove(self.json_path)
         os.remove(self.img_path)
-
-    def print_data(self):
-        print self.video_id
-        print self.video_path
-        print self.json_path
-        print self.img_path
