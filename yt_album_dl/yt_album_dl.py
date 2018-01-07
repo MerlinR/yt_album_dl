@@ -1,5 +1,4 @@
 #!/usr/bin/python
-#coding=utf-8
 #===============================================================================================
 # Title           :yt_album_dl.py
 # Description     :
@@ -45,6 +44,17 @@ mp3Data = {
     'album_artist':     "",
     'type':             "", # Not tag but used to clarify.
 }
+
+#===============================================================================================
+
+def error_catch(errorMessage, error=None):
+    sys.stdout.write('ERROR: %s\n' % errorMessage)
+
+    if error is not None:
+        sys.stdout.write('\t%s\n' % error)
+
+    sys.stdout.flush()
+    exit()
 
 #===============================================================================================
 
@@ -101,8 +111,11 @@ def capitaliseTitle(string):
 #===============================================================================================
 
 def cleanFilename(filename):
+    # Removes all brackets and its contents and any whitespace surrounding it
+    filename = re.sub(r'\s*[\<\(\[\{].*[\}\]\)\>]\s*',"",filename)
+
     # Removes chars that could cause issues as file name.
-    filename = re.sub(r'[^a-zA-Z0-9\-\_\(\)\ ]',"",filename)
+    filename = re.sub(r'[^a-zA-Z0-9\-\_\ ]',"",filename)
 
     #Remove duplicate spaces from removing symbols
     filename = re.sub(" +"," ",filename).strip()
@@ -121,12 +134,18 @@ def cleanMp3DataTitles(mp3Data):
     # Removes all brackets and its contents and everything after
     regexRemoveBracketsEnd=re.compile("\s*[\<\(\[\{].*[\}\]\)\>].*")
 
-    #Removes any junk symbols at the start which are not part of the name
+    # Removes any junk symbols at the start which are not part of the name
     regexRemoveTimeStampClutter=re.compile("^\d*[^\w]*\s*")
+
+    # Remove junk globlaly (any type)
+    regexRemoveJunk=re.compile("\"")
 
     if 'artist' in mp3Data:
         # Remove set of brackets and contents
         mp3Data['artist'] = re.sub(regexRemoveBracketsStart, "", mp3Data['artist'])
+
+        # Remove junk
+        mp3Data['artist'] = re.sub(regexRemoveJunk, "", mp3Data['artist'])
 
         # remove any numbering used from Timestamp E.G (00:00 :~ Artist -> Artist)
         mp3Data['artist'] = re.sub(regexRemoveTimeStampClutter, "", mp3Data['artist'])
@@ -135,16 +154,27 @@ def cleanMp3DataTitles(mp3Data):
     if 'album' in mp3Data:
         # Remove set of brackets and contents
         mp3Data['album'] = re.sub(regexRemoveBracketsEnd, "", mp3Data['album'])
+
+        # Remove junk
+        mp3Data['album'] = re.sub(regexRemoveJunk, "", mp3Data['album'])
+
         mp3Data['album'].strip()
 
     if 'title' in mp3Data and ('type' in mp3Data and mp3Data['type'] == 'single'):
         # Remove set of brackets and contents E.G ("Title (Audio)" -> "Title")
         mp3Data['title'] = re.sub(regexRemoveBracketsEnd, "", mp3Data['title'])
+
+        # Remove junk
+        mp3Data['title'] = re.sub(regexRemoveJunk, "", mp3Data['title'])
+        
         mp3Data['title'].strip()
 
     elif 'title' in mp3Data and ('type' not in mp3Data or mp3Data['type'] != 'single'):
         # remove any numbering used from Timestamp E.G ("00:00 :~ Artist" -> "Artist")
         mp3Data['title'] = re.sub(regexRemoveTimeStampClutter, "", mp3Data['title'])
+
+        # Remove junk
+        mp3Data['title'] = re.sub(regexRemoveJunk, "", mp3Data['title'])
 
         #Doesnt attempt to remove Brackets when song is listed in description
         mp3Data['title'].strip()
@@ -155,23 +185,23 @@ def cleanMp3DataTitles(mp3Data):
 
 def splitTitleByDelimiter(title):
     # Removes "en dash" (weird HTML based dashes) not ASCII into dash
+    #title = title.encode("utf-8")
     title = re.sub("\xe2\x80\x93", "-", title)
     title = re.sub("\xe2\x80\x94", "-", title)
 
     title = capitaliseTitle(title)
 
     # Removes extra brackets etc from titles
+    # or returns False to indicate it cannot be split
     if "-" in title:
         splitTitle = title.split('-')
     elif "~" in title:
         splitTitle = title.split('~')
+    else:
+        return False
 
-    try:
-        splitTitle[0] = splitTitle[0].strip()
-        splitTitle[1] = splitTitle[1].strip()
-    except Exception as e:
-        print "ERROR: Could not split title."
-        exit()
+    splitTitle[0] = splitTitle[0].strip()
+    splitTitle[1] = splitTitle[1].strip()
 
     # return in order based on reverse or not.
     if(downloadSettings['reverse_title']):
@@ -195,15 +225,15 @@ def searchForVideosByID(path):
 
 # Fucking really man? How drunk was i?
 # Kinda better now
-def exportSong(video, start, duration, track_num, file_name, mp3Data):
+def exportSong(video, songStartTime, songDuration, trackNumber, fileName, mp3Data):
     # Load video into audiosegment
-    video_split = AudioSegment.from_file(video.video_path, 'mp3')
+    exportVideo = AudioSegment.from_file(video.video_path, 'mp3')
 
     # While video splitting is always necessary we can add meta-data and convert to MP3
-    video_split[start:][:duration].export("{}{}.{}".format(downloadSettings['path'] ,file_name, "mp3"), 
+    exportVideo[songStartTime:][:songDuration].export("{}{}.{}".format(downloadSettings['path'] ,fileName, "mp3"), 
         format="mp3", 
         tags={'artist': mp3Data['artist'], 'title': mp3Data['title'], 'album': mp3Data['album'], 
-              'track': track_num, 'album_artist': mp3Data['album_artist'] },
+              'track': trackNumber, 'album_artist': mp3Data['album_artist'] },
         cover=video.img_path
     )
 
@@ -219,12 +249,16 @@ def format_single(video):
     mp3Data['type'] = 'single'
 
     # Splits title into artist and title.
-    mp3Data['artist'], mp3Data['title'] = splitTitleByDelimiter(video.jsonVideoData['fulltitle'])
+    # Needs improvement, Really dislike using Catch for this.
+    try:
+        mp3Data['artist'], mp3Data['title'] = splitTitleByDelimiter(video.jsonVideoData['fulltitle'])
+    except Exception as e:
+        error_catch("Could not split video title")
 
     # Clean up Title, Artist and album.
     mp3Data = cleanMp3DataTitles(mp3Data)
 
-    # Check for overiding arguments
+    # Check for overriding arguments
     mp3Data = argumentOverrides(mp3Data)
     
     # sets safe name for saving file to Disk
@@ -237,98 +271,115 @@ def format_single(video):
 
 #===============================================================================================
 
-# def format_playlist(video_list):
-#     sys.stdout.write('\tDetected plyalist, formating videos\n')
-#     sys.stdout.flush()
+def format_album(video):
+    sys.stdout.write('Video is an album of the same artist.\n\tIf this is wrong, then well fuck.\n')
+    sys.stdout.flush()
 
-#     #Name of playlist can be used to find artist and album, but cant distinguish between compilations and albums.
-#     #artist, album = splitTitleByDelimiter(video_list[i].jsonVideoData['playlist'])
+    global mp3Data
 
-#     for i in range(0, len(video_list)):
-#         # Splits title into artist and title.
-#         artist, title = splitTitleByDelimiter(video_list[i].jsonVideoData['fulltitle'])
+    try:
+        mp3Data['artist'], mp3Data['album'] = splitTitleByDelimiter(video.jsonVideoData['fulltitle'])
+    except Exception as e:
+        error_catch("Could not split video title")
 
-#         # Check for forced arguments
-#         artist, album, title, album_artist = argumentOverrides(artist, "", title, "")
-        
-#         # sets safe name for saving file to Disk
-#         if(downloadSettings['artist_def'] is not None):
-#             file_name = title
-#         else:
-#             file_name = "{}_{}".format(artist, title)
-
-#         file_name = cleanFilename(file_name)
-
-#         print "%d: %s - %s\n\t...currently being formatted." % (i+1, artist, title)
-
-#         # Export video as MP3 with meta-data
-#         exportSong(video_list[i], 0, video_list[i].jsonVideoData['duration'] * 1000, 
-#                     downloadSettings['path'], video_list[i].img_path, i+1,
-#                     file_name, artist, title, album, album_artist)
-
-#     print ("Finished downloading and formating %s\nStored within %s" 
-#             % (video_list[i].jsonVideoData['fulltitle'], downloadSettings['path']))
-
-#===============================================================================================
-# def format_album(video):
-#     sys.stdout.write('Video is an album of the same artist.\n\tIf this is wrong, then well fuck.\n')
-#     sys.stdout.flush()
-
-#     artist, album = splitTitleByDelimiter(video.jsonVideoData['fulltitle'])
-
-#      # Check for forced arguments
-#     artist, album, title, album_artist = argumentOverrides(artist, album, "", "")
+    # Check for overriding arguments
+    mp3Data = argumentOverrides(mp3Data)
     
-#     for i in range(0, len(video.jsonVideoData['chapters'])):
+    for i in range(0, len(video.jsonVideoData['chapters'])):
 
-#         title = clean_song(video.jsonVideoData['chapters'][i]['title'])
+        # Find title for specific song
+        mp3Data['title'] = video.jsonVideoData['chapters'][i]['title']
 
-#         # Check everything for each song is fairly redundant
-#         artist, album, title, album_artist = argumentOverrides(artist, album, title, album_artist)
+        # Clean up Title, Artist and album.
+        mp3Data = cleanMp3DataTitles(mp3Data)
 
-#         # get start and duration of songs in milliseconds
-#         start = video.jsonVideoData['chapters'][i]['start_time'] * 1000
-#         duration = (video.jsonVideoData['chapters'][i]['end_time'] * 1000) - start
+        # Calculate start and duration of songs in milliseconds
+        songStartingTime = video.jsonVideoData['chapters'][i]['start_time'] * 1000
+        songDuration = (video.jsonVideoData['chapters'][i]['end_time'] * 1000) - songStartingTime
 
-#         print "%d: %s - %s\n\t...currently being split." % (i+1, artist, title)
+        print "%d: %s - %s\n\t...currently being split." % (i+1, mp3Data['artist'], mp3Data['title'])
 
-#         # Export video as MP3 with meta-data
-#         exportSong(video, start, duration, downloadSettings['path'],
-#                     video.img_path, i+1, cleanFilename(title), 
-#                     artist, title, album, album_artist)
-#     print "Finished downloading and splitting %s\nStored within %s" % (video.jsonVideoData['fulltitle'], downloadSettings['path'])
+        # Export video as MP3 with meta-data
+        exportSong(video, songStartingTime, songDuration, i+1, cleanFilename(mp3Data['title']), mp3Data)
+
+
+    print "Finished downloading and splitting \"%s\"\nStored within %s" % (video.jsonVideoData['fulltitle'], downloadSettings['path'])
 
 #===============================================================================================
 
-# def format_compilation(video):
-#     sys.stdout.write('Video is an compilation album.\n\tIf this is wrong, then well fuck.\n')
-#     sys.stdout.flush()
+def format_compilation(video):
+    sys.stdout.write('Video is an compilation album.\n\tIf this is wrong, then well fuck.\n')
+    sys.stdout.flush()
 
-#     album_artist = ""
-#     album = video.jsonVideoData['fulltitle'].encode('utf-8')
-#     album = clean_title(album)
+    global mp3Data
+
+    mp3Data['album'] = video.jsonVideoData['fulltitle']
+    mp3Data['album_artist'] = "Various Artists"
  
-#     for i in range(0, len(video.jsonVideoData['chapters'])):
+    for i in range(0, len(video.jsonVideoData['chapters'])):
 
-#         artist, title = splitTitleByDelimiter(video.jsonVideoData['chapters'][i]['title'])
+        try:
+            mp3Data['artist'], mp3Data['title']  = splitTitleByDelimiter(video.jsonVideoData['chapters'][i]['title'])
+        except Exception as e:
+            error_catch("Could not split video title")
 
-#         artist, album, title, album_artist = argumentOverrides(artist, album, title, album_artist)
+        mp3Data = argumentOverrides(mp3Data)
 
-#         # get start and duration of songs in milliseconds
-#         start = video.jsonVideoData['chapters'][i]['start_time'] * 1000
-#         duration = (video.jsonVideoData['chapters'][i]['end_time'] * 1000) - start
+        # Clean up Title, Artist and album.
+        mp3Data = cleanMp3DataTitles(mp3Data)
 
-#         print "%d: %s - %s\n\t...currently being split." % (i+1, artist, title)
+        # get start and duration of songs in milliseconds
+        songStartingTime = video.jsonVideoData['chapters'][i]['start_time'] * 1000
+        songDuration = (video.jsonVideoData['chapters'][i]['end_time'] * 1000) - songStartingTime
 
-#         # sets safe name for saving file to Disk
-#         file_name = "{}_{}".format(artist, title)
-#         file_name = cleanFilename(file_name)
+        print "%d: %s - %s\n\t...currently being split." % (i+1, mp3Data['artist'], mp3Data['title'])
 
-#         exportSong(video, start, duration, downloadSettings['path'],
-#                     video.img_path, i+1, file_name, 
-#                     artist, title, album, album_artist)
+        # sets safe name for saving file to Disk
+        fileName = cleanFilename("{}_{}".format(mp3Data['artist'], mp3Data['title']))
 
-#     print "Finished downloading and splitting %s\nStored within %s" % (video.jsonVideoData['fulltitle'], downloadSettings['path'])
+        # Export video as MP3 with meta-data
+        exportSong(video, songStartingTime, songDuration, i+1, fileName, mp3Data)
+
+    print "Finished downloading and splitting \"%s\"\nStored within %s" % (video.jsonVideoData['fulltitle'], downloadSettings['path'])
+
+#===============================================================================================
+
+def format_playlist(video_list):
+    sys.stdout.write('\tDetected plyalist, formating videos\n')
+    sys.stdout.flush()
+
+    # Using mp3Data Global (As C struct)
+    global mp3Data
+
+    #Name of playlist can be used to find artist and album, but cant distinguish between compilations and albums.
+    try:
+        mp3Data['artist'], mp3Data['album'] = splitTitleByDelimiter(video_list[0].jsonVideoData['playlist'])
+    except Exception as e:
+        mp3Data['album'] = video_list[0].jsonVideoData['playlist']
+
+    for i in range(0, len(video_list)):
+        # Splits title into artist and title.
+        try:
+            mp3Data['artist'], mp3Data['title'] = splitTitleByDelimiter(video_list[i].jsonVideoData['fulltitle'])
+        except Exception as e:
+            mp3Data['title'] = video_list[i].jsonVideoData['fulltitle']
+
+        # Check for overriding arguments
+        mp3Data = argumentOverrides(mp3Data)
+        
+        # sets safe name for saving file to Disk
+        file_name = "{}-{}".format(mp3Data['artist'], mp3Data['title'])
+
+        file_name = cleanFilename(file_name)
+
+        print "%d: %s - %s\n\t...currently being formatted." % (i+1, mp3Data['artist'], mp3Data['title'])
+
+        # Export video as MP3 with meta-data
+        exportSong(video_list[i], 0, video_list[i].jsonVideoData['duration'] * 1000, i+1, file_name, mp3Data)
+
+    print ("Finished downloading and formating \"%s\"\nStored within %s" 
+            % (video_list[i].jsonVideoData['fulltitle'], downloadSettings['path']))
+
 
 #===============================================================================================
 # Main
@@ -422,28 +473,41 @@ if __name__ == "__main__":
         dl_videos.append(video_data(videoID, downloadSettings['path']))
     
     # This is so Damn nasty.
-    if( len(dl_videos) > 1 or downloadSettings['video_type'] == 'p'):
-        # If multiple videos downloaded its a playlist
-        print "PLAYLISTS ARE WORK IN PROGRESS, PLEASE FORCE ALBUM AND ARTIST IF DOESNT WORK CORRECTLY"
-        print "TEMP STOPPED"
-        exit()
-        #format_playlist(dl_videos)
+    # This shit still here, Fuck man
+    if (not downloadSettings['video_type']):
+        if( len(dl_videos) > 1 or downloadSettings['video_type'] == 'p'):
+            # If multiple videos downloaded its a playlist
+            print "PLAYLISTS ARE WORK IN PROGRESS, PLEASE FORCE ALBUM AND ARTIST IF DOESNT WORK CORRECTLY"
+            format_playlist(dl_videos)
 
-    elif( dl_videos[0].jsonVideoData['chapters'] is None or downloadSettings['video_type'] == 's'):
-        # If no chapters in single video, its a single
-        format_single(dl_videos[0])
+        elif( dl_videos[0].jsonVideoData['chapters'] is None or downloadSettings['video_type'] == 's'):
+            # If no chapters in single video, its a single
+            format_single(dl_videos[0])
 
-    elif( "-" in clean_title(dl_videos[0].jsonVideoData['fulltitle']) or downloadSettings['video_type'] == 'a'):
-        # A little junky, if video title uses dash such as <artist - title>
-        print "TEMP STOPPED"
-        exit()
-        format_album(dl_videos[0])
+        elif( splitTitleByDelimiter(dl_videos[0].jsonVideoData['fulltitle']) or downloadSettings['video_type'] == 'a'):
+            # A little junky, if video title uses dash such as <artist - title>
+            format_album(dl_videos[0])
 
-    elif( "-" not in clean_title(dl_videos[0].jsonVideoData['fulltitle']) or downloadSettings['video_type'] == 'c'):
-        print "TEMP STOPPED"
-        exit()
-        format_compilation(dl_videos[0])
+        elif( splitTitleByDelimiter(dl_videos[0].jsonVideoData['fulltitle']) is False or downloadSettings['video_type'] == 'c'):
+            format_compilation(dl_videos[0])
 
-    else:
-        print "could not detect video type"
+        else:
+            error_catch("could not detect video type")
         
+    else:
+        if (downloadSettings['video_type'] == 'p'):
+            # If multiple videos downloaded its a playlist
+            print "PLAYLISTS ARE WORK IN PROGRESS, PLEASE FORCE ALBUM AND ARTIST IF DOESNT WORK CORRECTLY"
+            format_playlist(dl_videos)
+
+        elif (downloadSettings['video_type'] == 's'):
+            format_single(dl_videos[0])
+
+        elif (downloadSettings['video_type'] == 'a'):
+            format_album(dl_videos[0])
+
+        elif (downloadSettings['video_type'] == 'c'):
+            format_compilation(dl_videos[0])
+
+        else:
+            error_catch("could not detect video type")

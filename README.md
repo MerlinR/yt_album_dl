@@ -11,6 +11,7 @@ This script will differentiate, download and split:
 
 ## Install guide
     1.Install requirements
+        - Install ffmpeg
         - pip install -r requirements.txt
     2. Run!
         - python yt_album_dl.py <URL> -d <DESTINATION>
@@ -34,6 +35,8 @@ This script will differentiate, download and split:
         -y <ALBUM_ARTIST>
 
 ## Req
+ffmpeg
+
 (just install the requirement.txt file)
 youtube-dl
 pydub
@@ -45,8 +48,10 @@ Im an idiot so tests need to be ran from the main dir.
 ## To-Do
     - Allow other formats (look into tags for other formats)
     - Store temp files in tmp dir instead of output dir (less clutter and no residue)
-    - Implemented ability to download Playlists (kinda works?)
-    - REALLY CLEAN THE NASTY ASS CODE UP
+    - Playlists expect songs to be singles.
+    - REALLY CLEAN THE NASTY ASS CODE UP <- impossible for my skill set
+    - Create Smoke tests for singles, Albums, Compilations, Playlists
+    - Better detection for video type. Its fucking abysmal, Bloody bellend
 
 ## Bugs
     - Album or compilation detected as single song

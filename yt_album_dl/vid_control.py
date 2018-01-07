@@ -20,15 +20,18 @@ class video_data:
 
     def __init__(self, GivenVideoID, GivenVideoPath):
         self.video_id = GivenVideoID
-        self.video_path = GivenVideoPath + self.video_id + '.mp3'
+        self.video_path = GivenVideoPath + self.video_id + '.wav'
         self.json_path = GivenVideoPath + self.video_id + '.info.json'
         self.img_path = GivenVideoPath + self.video_id + '.jpg'
 
         with open(self.json_path) as data_file:    
             self.jsonVideoData = json.load(data_file)
 
-    # Using class destructor to delete the remnants of the download.
-    def __del__(self):
+    def deleteTempFiles(self):
         os.remove(self.video_path)
         os.remove(self.json_path)
         os.remove(self.img_path)
+
+    # Using class destructor to delete the remnants of the download.
+    def __del__(self):
+        self.deleteTempFiles()

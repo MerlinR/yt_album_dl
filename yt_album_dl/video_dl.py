@@ -28,6 +28,10 @@ def yt_d_hook(d):
             sys.stdout.write('\r\033[K')
             sys.stdout.write('\tDownloading video | ETA: {} seconds'.format(str(d["eta"])))
             sys.stdout.flush()
+        elif d['status'] == 'error':
+            sys.stdout.write('\r\033[K')
+            sys.stdout.write('\tError\n')
+            sys.stdout.flush()
         elif d['status'] == 'finished':
             sys.stdout.write('\r\033[K')
             sys.stdout.write('\tDownload complete\n')
@@ -41,9 +45,10 @@ class yt_downloader:
         'writethumbnail': 'true',           # Saves stillshot of youtube video as JPG
         'writeinfojson': 'true',            # Stores JSON file of video info, including segments of video.
         'format': 'bestaudio/best',         # Format
+        'ignoreerrors': 'true',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
+            'preferredcodec': 'wav',
             'preferredquality': '0',
         }],
         'outtmpl': '%(id)s.%(ext)s',        # Output save format
