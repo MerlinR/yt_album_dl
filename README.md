@@ -49,9 +49,8 @@ Im an idiot so tests need to be ran from the main dir.
     - Allow other formats (look into tags for other formats)
     - Store temp files in tmp dir instead of output dir (less clutter and no residue)
     - Playlists expect songs to be singles.
-    - REALLY CLEAN THE NASTY ASS CODE UP <- impossible for my skill set
-    - Create Smoke tests for singles, Albums, Compilations, Playlists
     - Better detection for video type. Its fucking abysmal, Bloody bellend
+    - If no Delimiter check for forced values
 
 ## Bugs
     - Album or compilation detected as single song

@@ -94,7 +94,7 @@ def argumentOverrides(mp3Data):
 
 # Using in place of ".title()" in order to not lowercase intentional names or symbols
 #   E.G With .title()
-#       ("JJ Doom", "TW@T", "Master's Dog") -> ("Jj Doom", "Tw@T", "Master'S Dog")
+#       ("JJ Doom", "TW@T", "Master's Dog") -> ("JJ Doom", "TW@T", "Master'S Dog")
 def capitaliseTitle(string):
     newString=""
 
@@ -134,49 +134,34 @@ def cleanMp3DataTitles(mp3Data):
     # Removes all brackets and its contents and everything after
     regexRemoveBracketsEnd=re.compile("\s*[\<\(\[\{].*[\}\]\)\>].*")
 
-    # Removes any junk symbols at the start which are not part of the name
+    # remove any numbering used from Timestamp E.G (00:00 :~ Artist -> Artist)
     regexRemoveTimeStampClutter=re.compile("^\d*[^\w]*\s*")
 
     # Remove junk globlaly (any type)
     regexRemoveJunk=re.compile("\"")
 
     if 'artist' in mp3Data:
-        # Remove set of brackets and contents
         mp3Data['artist'] = re.sub(regexRemoveBracketsStart, "", mp3Data['artist'])
-
-        # Remove junk
         mp3Data['artist'] = re.sub(regexRemoveJunk, "", mp3Data['artist'])
-
-        # remove any numbering used from Timestamp E.G (00:00 :~ Artist -> Artist)
         mp3Data['artist'] = re.sub(regexRemoveTimeStampClutter, "", mp3Data['artist'])
+
         mp3Data['artist'].strip()
 
     if 'album' in mp3Data:
-        # Remove set of brackets and contents
         mp3Data['album'] = re.sub(regexRemoveBracketsEnd, "", mp3Data['album'])
-
-        # Remove junk
         mp3Data['album'] = re.sub(regexRemoveJunk, "", mp3Data['album'])
 
         mp3Data['album'].strip()
 
-    if 'title' in mp3Data and ('type' in mp3Data and mp3Data['type'] == 'single'):
-        # Remove set of brackets and contents E.G ("Title (Audio)" -> "Title")
-        mp3Data['title'] = re.sub(regexRemoveBracketsEnd, "", mp3Data['title'])
+    if 'title' in mp3Data:
 
-        # Remove junk
+        if 'type' in mp3Data and mp3Data['type'] == 'single':
+            mp3Data['title'] = re.sub(regexRemoveBracketsEnd, "", mp3Data['title'])
+        else:
+            mp3Data['title'] = re.sub(regexRemoveTimeStampClutter, "", mp3Data['title'])
+
         mp3Data['title'] = re.sub(regexRemoveJunk, "", mp3Data['title'])
         
-        mp3Data['title'].strip()
-
-    elif 'title' in mp3Data and ('type' not in mp3Data or mp3Data['type'] != 'single'):
-        # remove any numbering used from Timestamp E.G ("00:00 :~ Artist" -> "Artist")
-        mp3Data['title'] = re.sub(regexRemoveTimeStampClutter, "", mp3Data['title'])
-
-        # Remove junk
-        mp3Data['title'] = re.sub(regexRemoveJunk, "", mp3Data['title'])
-
-        #Doesnt attempt to remove Brackets when song is listed in description
         mp3Data['title'].strip()
 
     return mp3Data
@@ -199,7 +184,7 @@ def splitTitleByDelimiter(title):
         splitTitle = title.split('~')
     else:
         return False
-
+    
     splitTitle[0] = splitTitle[0].strip()
     splitTitle[1] = splitTitle[1].strip()
 
@@ -252,16 +237,14 @@ def format_single(video):
     # Needs improvement, Really dislike using Catch for this.
     try:
         mp3Data['artist'], mp3Data['title'] = splitTitleByDelimiter(video.jsonVideoData['fulltitle'])
-    except Exception as e:
-        error_catch("Could not split video title")
+    except TypeError as err:
+        print("Youtube video cannot be split by Delimiter")
+        exit()
 
-    # Clean up Title, Artist and album.
     mp3Data = cleanMp3DataTitles(mp3Data)
 
-    # Check for overriding arguments
     mp3Data = argumentOverrides(mp3Data)
-    
-    # sets safe name for saving file to Disk
+
     file_name = cleanFilename("{}-{}".format(mp3Data['artist'], mp3Data['title']))
 
     # Export video as MP3 with meta-data
@@ -279,18 +262,17 @@ def format_album(video):
 
     try:
         mp3Data['artist'], mp3Data['album'] = splitTitleByDelimiter(video.jsonVideoData['fulltitle'])
-    except Exception as e:
-        error_catch("Could not split video title")
+    except TypeError as err:
+        print("Youtube video cannot be split by Delimiter")
+        exit()
 
     # Check for overriding arguments
     mp3Data = argumentOverrides(mp3Data)
     
     for i in range(0, len(video.jsonVideoData['chapters'])):
 
-        # Find title for specific song
         mp3Data['title'] = video.jsonVideoData['chapters'][i]['title']
 
-        # Clean up Title, Artist and album.
         mp3Data = cleanMp3DataTitles(mp3Data)
 
         # Calculate start and duration of songs in milliseconds
@@ -299,7 +281,6 @@ def format_album(video):
 
         print "%d: %s - %s\n\t...currently being split." % (i+1, mp3Data['artist'], mp3Data['title'])
 
-        # Export video as MP3 with meta-data
         exportSong(video, songStartingTime, songDuration, i+1, cleanFilename(mp3Data['title']), mp3Data)
 
 
@@ -320,12 +301,12 @@ def format_compilation(video):
 
         try:
             mp3Data['artist'], mp3Data['title']  = splitTitleByDelimiter(video.jsonVideoData['chapters'][i]['title'])
-        except Exception as e:
-            error_catch("Could not split video title")
+        except TypeError as err:
+            print("Youtube video cannot be split by Delimiter")
+            exit()
 
         mp3Data = argumentOverrides(mp3Data)
 
-        # Clean up Title, Artist and album.
         mp3Data = cleanMp3DataTitles(mp3Data)
 
         # get start and duration of songs in milliseconds
@@ -334,10 +315,8 @@ def format_compilation(video):
 
         print "%d: %s - %s\n\t...currently being split." % (i+1, mp3Data['artist'], mp3Data['title'])
 
-        # sets safe name for saving file to Disk
         fileName = cleanFilename("{}_{}".format(mp3Data['artist'], mp3Data['title']))
 
-        # Export video as MP3 with meta-data
         exportSong(video, songStartingTime, songDuration, i+1, fileName, mp3Data)
 
     print "Finished downloading and splitting \"%s\"\nStored within %s" % (video.jsonVideoData['fulltitle'], downloadSettings['path'])
@@ -354,27 +333,24 @@ def format_playlist(video_list):
     #Name of playlist can be used to find artist and album, but cant distinguish between compilations and albums.
     try:
         mp3Data['artist'], mp3Data['album'] = splitTitleByDelimiter(video_list[0].jsonVideoData['playlist'])
-    except Exception as e:
-        mp3Data['album'] = video_list[0].jsonVideoData['playlist']
+    except TypeError as err:
+        print("Youtube video cannot be split by Delimiter")
+        exit()
 
     for i in range(0, len(video_list)):
         # Splits title into artist and title.
-        try:
-            mp3Data['artist'], mp3Data['title'] = splitTitleByDelimiter(video_list[i].jsonVideoData['fulltitle'])
-        except Exception as e:
-            mp3Data['title'] = video_list[i].jsonVideoData['fulltitle']
+        mp3Data['artist'], mp3Data['title'] = splitTitleByDelimiter(video_list[i].jsonVideoData['fulltitle'])
 
-        # Check for overriding arguments
         mp3Data = argumentOverrides(mp3Data)
+
+        mp3Data = cleanMp3DataTitles(mp3Data)
         
-        # sets safe name for saving file to Disk
         file_name = "{}-{}".format(mp3Data['artist'], mp3Data['title'])
 
         file_name = cleanFilename(file_name)
 
         print "%d: %s - %s\n\t...currently being formatted." % (i+1, mp3Data['artist'], mp3Data['title'])
 
-        # Export video as MP3 with meta-data
         exportSong(video_list[i], 0, video_list[i].jsonVideoData['duration'] * 1000, i+1, file_name, mp3Data)
 
     print ("Finished downloading and formating \"%s\"\nStored within %s" 
@@ -407,7 +383,7 @@ if __name__ == "__main__":
     parser.add_argument(
             '-r', dest='reverse', 
             action='store_true', 
-            help="If video uses reversed naming convention title (Song - Artist)/(Album - Artist), use -r tag to correctly create tags."
+            help="If video uses reversed naming convention title (Song - Artist), use -r tag to correctly create tags."
     )
 
     parser.add_argument(
@@ -451,18 +427,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
     updateArguments(args)
 
-    # YT Downloader class
     video = yt_downloader(downloadSettings['link'])
 
     # creates destination folder
-    # THIS NEEDS RE-WORK LOOK INTO USING /TMP
+    # TODO THIS NEEDS RE-WORK LOOK INTO USING /TMP
     if (not os.path.exists(downloadSettings['path'])):
         os.makedirs(downloadSettings['path'])
 
-    # Sets Download dir for Youtube-dl settings
     video.setDownloadPath(downloadSettings['path'])
 
-    # Downloads video using settings and given URL.
     video.downloadVideo()
 
     # List of downloaded videos
@@ -485,7 +458,7 @@ if __name__ == "__main__":
             format_single(dl_videos[0])
 
         elif( splitTitleByDelimiter(dl_videos[0].jsonVideoData['fulltitle']) or downloadSettings['video_type'] == 'a'):
-            # A little junky, if video title uses dash such as <artist - title>
+            # A little janky, if video title uses dash such as <artist - title>
             format_album(dl_videos[0])
 
         elif( splitTitleByDelimiter(dl_videos[0].jsonVideoData['fulltitle']) is False or downloadSettings['video_type'] == 'c'):
