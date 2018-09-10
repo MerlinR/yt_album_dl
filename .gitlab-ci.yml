@@ -3,4 +3,4 @@ before_script:
 
 unit_tests:
   script:
-    - ./tests/test_yt_album_dl.py
+    - python tests/test_yt_album_dl.py
