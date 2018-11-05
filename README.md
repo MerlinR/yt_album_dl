@@ -51,6 +51,7 @@ Im an idiot so tests need to be ran from the main dir.
     - Playlists expect songs to be singles.
     - Better detection for video type. Its fucking abysmal, Bloody bellend
     - If no Delimiter check for forced values
+    - Check DB to auto select artist
 
 ## Bugs
     - Album or compilation detected as single songThis is either to the video not listed the songs within a large file or due to relying on youtube-dl json files to determine the contents of a video, which sometimes returns 'Null' for the chapters (songs) within a larger video. This cant be fixed by using force detection.
