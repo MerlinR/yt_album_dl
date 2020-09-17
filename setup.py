@@ -1,7 +1,7 @@
 #!/usr/bin/python
-
+import setuptools
 import os
-from distutils.core import setup
+
 
 with open('README.md') as f:
     readme = f.read()
@@ -9,14 +9,21 @@ with open('README.md') as f:
 with open('LICENSE') as f:
     license = f.read()
 
-setup(
+setuptools.setup(
     name='yt_album_dl',
-    version='1.0',
+    version='1.8',
     description='Simple tool to quickly download music videos from Youtube, while splitting albums and correctly applying metadata.',
-    long_description=readme,
     author='Merlin Roe',
-    author_email='merlin.roe@hotmail.co.uk',
+    author_email='Merlin.Roe@hotmail.co.uk',
+    scripts=['yt_album_dl/yt_album_dl', "yt_album_dl/vid_control.py", "yt_album_dl/video_dl.py"],
     license=license,
-    package_dir = {'yt_album_dl'},
-    install_requires=['youtube-dl', 'pydub'],
+    long_description=readme,
+    long_description_content_type="text/markdown",
+    url="https://github.com/MerlinR/yt_album_dl",
+    packages=setuptools.find_packages(),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ],
 )

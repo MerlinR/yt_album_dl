@@ -61,7 +61,7 @@ class yt_downloader:
         self.validationCheck()
 
     def downloadVideo(self):
-        print self.url
+        print(self.url)
         with youtube_dl.YoutubeDL(self.ydl_opts) as ydl:
             ydl.download([self.url])
 
@@ -70,5 +70,5 @@ class yt_downloader:
 
     def validationCheck(self):
         if("youtube" not in self.url):
-            print "Currently only supports youtube"
+            print("Currently only supports youtube")
             quit()

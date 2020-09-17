@@ -1,16 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #===============================================================================================
 # Title           :yt_album_dl.py
-# Description     :
 __author__  = "Merlin Roe"
-# Date            :19/09/2017
 __version__ = "1.8"
-# Usage           :python yt_album_dl.py
-# Notes           :
-# Python_version  :2.7.13
-#===============================================================================================
-# Imports
-#===============================================================================================
 import sys
 import os
 import re
@@ -250,7 +242,7 @@ def format_single(video):
     # Export video as MP3 with meta-data
     exportSong(video, 0, video.jsonVideoData['duration'] * 1000, 0, file_name, mp3Data)
 
-    print "Finished downloading and formating %s\nStored within %s" % (video.jsonVideoData['fulltitle'], downloadSettings['path'])
+    print("Finished downloading and formating %s\nStored within %s" % (video.jsonVideoData['fulltitle'], downloadSettings['path']))
 
 #===============================================================================================
 
@@ -279,12 +271,12 @@ def format_album(video):
         songStartingTime = video.jsonVideoData['chapters'][i]['start_time'] * 1000
         songDuration = (video.jsonVideoData['chapters'][i]['end_time'] * 1000) - songStartingTime
 
-        print "%d: %s - %s\n\t...currently being split." % (i+1, mp3Data['artist'], mp3Data['title'])
+        print("%d: %s - %s\n\t...currently being split." % (i+1, mp3Data['artist'], mp3Data['title']))
 
         exportSong(video, songStartingTime, songDuration, i+1, cleanFilename(mp3Data['title']), mp3Data)
 
 
-    print "Finished downloading and splitting \"%s\"\nStored within %s" % (video.jsonVideoData['fulltitle'], downloadSettings['path'])
+    print("Finished downloading and splitting \"%s\"\nStored within %s" % (video.jsonVideoData['fulltitle'], downloadSettings['path']))
 
 #===============================================================================================
 
@@ -313,13 +305,13 @@ def format_compilation(video):
         songStartingTime = video.jsonVideoData['chapters'][i]['start_time'] * 1000
         songDuration = (video.jsonVideoData['chapters'][i]['end_time'] * 1000) - songStartingTime
 
-        print "%d: %s - %s\n\t...currently being split." % (i+1, mp3Data['artist'], mp3Data['title'])
+        print("%d: %s - %s\n\t...currently being split." % (i+1, mp3Data['artist'], mp3Data['title']))
 
         fileName = cleanFilename("{}_{}".format(mp3Data['artist'], mp3Data['title']))
 
         exportSong(video, songStartingTime, songDuration, i+1, fileName, mp3Data)
 
-    print "Finished downloading and splitting \"%s\"\nStored within %s" % (video.jsonVideoData['fulltitle'], downloadSettings['path'])
+    print("Finished downloading and splitting \"%s\"\nStored within %s" % (video.jsonVideoData['fulltitle'], downloadSettings['path']))
 
 #===============================================================================================
 
@@ -349,11 +341,11 @@ def format_playlist(video_list):
 
         file_name = cleanFilename(file_name)
 
-        print "%d: %s - %s\n\t...currently being formatted." % (i+1, mp3Data['artist'], mp3Data['title'])
+        print("%d: %s - %s\n\t...currently being formatted." % (i+1, mp3Data['artist'], mp3Data['title']))
 
         exportSong(video_list[i], 0, video_list[i].jsonVideoData['duration'] * 1000, i+1, file_name, mp3Data)
 
-    print ("Finished downloading and formating \"%s\"\nStored within %s" 
+    print("Finished downloading and formating \"%s\"\nStored within %s"
             % (video_list[i].jsonVideoData['fulltitle'], downloadSettings['path']))
 
 
@@ -450,7 +442,7 @@ if __name__ == "__main__":
     if (not downloadSettings['video_type']):
         if( len(dl_videos) > 1 or downloadSettings['video_type'] == 'p'):
             # If multiple videos downloaded its a playlist
-            print "PLAYLISTS ARE WORK IN PROGRESS, PLEASE FORCE ALBUM AND ARTIST IF DOESNT WORK CORRECTLY"
+            print("PLAYLISTS ARE WORK IN PROGRESS, PLEASE FORCE ALBUM AND ARTIST IF DOESNT WORK CORRECTLY")
             format_playlist(dl_videos)
 
         elif( dl_videos[0].jsonVideoData['chapters'] is None or downloadSettings['video_type'] == 's'):
@@ -470,7 +462,7 @@ if __name__ == "__main__":
     else:
         if (downloadSettings['video_type'] == 'p'):
             # If multiple videos downloaded its a playlist
-            print "PLAYLISTS ARE WORK IN PROGRESS, PLEASE FORCE ALBUM AND ARTIST IF DOESNT WORK CORRECTLY"
+            print("PLAYLISTS ARE WORK IN PROGRESS, PLEASE FORCE ALBUM AND ARTIST IF DOESNT WORK CORRECTLY")
             format_playlist(dl_videos)
 
         elif (downloadSettings['video_type'] == 's'):

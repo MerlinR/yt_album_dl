@@ -1,16 +1,5 @@
 #!/usr/bin/python
 #coding=utf-8
-#==============================================================================
-#Title           :tests/test_yt_album_dl.py
-#Description     :
-__author__	= "Merlin Roe"
-#Date            :19/12/2017
-__version__	= "0.1"
-#Usage           :./tests/test_yt_album_dl.py
-#Notes           :
-#Python_version  :2.7.13
-#==============================================================================
-
 import sys
 import os
 import unittest
